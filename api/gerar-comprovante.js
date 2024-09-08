@@ -1,4 +1,5 @@
-const puppeteer = require('puppeteer');
+const chrome = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
 const path = require('path');
 const ejs = require('ejs');
 
@@ -25,7 +26,6 @@ function renderTemplate(templateName, data) {
     });
 }
 
-// Função principal que gera o comprovante
 module.exports = async (req, res) => {
     const dados = req.body;
     const valorFormatado = formatarValorEmReais(dados.valor);
@@ -48,8 +48,13 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        // Garante que o navegador está inicializado
-        const browser = await puppeteer.launch({ headless: true });
+        // Configura o puppeteer para usar o Chrome do chrome-aws-lambda
+        const browser = await puppeteer.launch({
+            args: chrome.args,
+            executablePath: await chrome.executablePath,
+            headless: chrome.headless,
+        });
+
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -86,6 +91,7 @@ module.exports = async (req, res) => {
 
         // Fecha a página, mas mantém o navegador aberto para reutilização
         await page.close();
+        await browser.close();
 
         // Retorne a URL do comprovante gerado
         const fileUrl = `${req.protocol}://${req.get('host')}/comprovantes/${fileName}`;
