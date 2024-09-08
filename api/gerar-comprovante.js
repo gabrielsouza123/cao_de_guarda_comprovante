@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
+const fs = require('fs');
 
 // Função para formatar o valor em reais (R$)
 function formatarValorEmReais(valor) {
@@ -44,7 +45,7 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        const browser = await puppeteer.launch({ headless: true });
+        const browser = await puppeteer.launch({ headless: false });
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -65,7 +66,8 @@ module.exports = async (req, res) => {
         });
         
         // Captura a tela incluindo a margem de 24px
-        const imagePath = path.join(__dirname, '..', 'comprovantes', `comprovante-${Date.now()}.jpg`);
+        const fileName = `comprovante-${Date.now()}.jpg`;
+        const imagePath = path.join(__dirname, '..', 'comprovantes', fileName);
         await page.screenshot({
             path: imagePath,
             type: 'jpeg',
@@ -81,9 +83,11 @@ module.exports = async (req, res) => {
         // Fecha o Puppeteer
         await browser.close();
 
-        // Envia a imagem gerada
-        res.set('Content-Type', 'image/jpeg');
-        res.sendFile(imagePath);
+        // Retorne a URL do comprovante gerado
+        const fileUrl = `${req.protocol}://${req.get('host')}/comprovantes/${fileName}`;
+
+        // Retorna a URL na resposta
+        res.json({ url: fileUrl });
     } catch (error) {
         console.error('Erro ao gerar o comprovante:', error);
         res.status(500).send('Erro ao gerar o comprovante');
