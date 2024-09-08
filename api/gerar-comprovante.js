@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const fs = require('fs');
+const ejs = require('ejs');
 
 // Função para formatar o valor em reais (R$)
 function formatarValorEmReais(valor) {
@@ -11,10 +11,12 @@ function formatarValorEmReais(valor) {
     return valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Função para renderizar o template EJS
-function renderTemplate(app, templateName, data) {
+// Função para renderizar o template EJS diretamente
+function renderTemplate(templateName, data) {
+    const templatePath = path.join(__dirname, '..', 'views', `${templateName}.ejs`);
+    
     return new Promise((resolve, reject) => {
-        app.render(templateName, data, (err, html) => {
+        ejs.renderFile(templatePath, data, (err, html) => {
             if (err) {
                 return reject(err);
             }
@@ -23,13 +25,14 @@ function renderTemplate(app, templateName, data) {
     });
 }
 
+// Função principal que gera o comprovante
 module.exports = async (req, res) => {
     const dados = req.body;
     const valorFormatado = formatarValorEmReais(dados.valor);
 
     try {
         // Renderiza o template EJS com os dados fornecidos
-        const html = await renderTemplate(req.app, 'comprovante', {
+        const html = await renderTemplate('comprovante', {
             nomeEmissor: dados.nomeEmissor,
             documentoEmissor: dados.documentoEmissor,
             bancoEmissor: dados.bancoEmissor,
@@ -45,7 +48,8 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        const browser = await puppeteer.launch({ headless: false });
+        // Garante que o navegador está inicializado
+        const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -80,8 +84,8 @@ module.exports = async (req, res) => {
             }
         });
 
-        // Fecha o Puppeteer
-        await browser.close();
+        // Fecha a página, mas mantém o navegador aberto para reutilização
+        await page.close();
 
         // Retorne a URL do comprovante gerado
         const fileUrl = `${req.protocol}://${req.get('host')}/comprovantes/${fileName}`;
