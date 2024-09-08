@@ -1,15 +1,5 @@
-const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-
-// Definir pasta de arquivos estáticos (imagens, CSS, JS)
-const app = express();
-app.use('/assets', express.static('assets'));
-app.use(bodyParser.json());
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
 
 // Função para formatar o valor em reais (R$)
 function formatarValorEmReais(valor) {
@@ -20,14 +10,25 @@ function formatarValorEmReais(valor) {
     return valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Rota POST para receber os dados e gerar o comprovante
-app.post('/gerar-comprovante', async (req, res) => {
+// Função para renderizar o template EJS
+function renderTemplate(app, templateName, data) {
+    return new Promise((resolve, reject) => {
+        app.render(templateName, data, (err, html) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(html);
+        });
+    });
+}
+
+module.exports = async (req, res) => {
     const dados = req.body;
     const valorFormatado = formatarValorEmReais(dados.valor);
 
     try {
         // Renderiza o template EJS com os dados fornecidos
-        const html = await renderTemplate('comprovante', {
+        const html = await renderTemplate(req.app, 'comprovante', {
             nomeEmissor: dados.nomeEmissor,
             documentoEmissor: dados.documentoEmissor,
             bancoEmissor: dados.bancoEmissor,
@@ -64,7 +65,7 @@ app.post('/gerar-comprovante', async (req, res) => {
         });
         
         // Captura a tela incluindo a margem de 24px
-        const imagePath = path.join(__dirname, 'comprovantes', `comprovante-${Date.now()}.jpg`);
+        const imagePath = path.join(__dirname, '..', 'comprovantes', `comprovante-${Date.now()}.jpg`);
         await page.screenshot({
             path: imagePath,
             type: 'jpeg',
@@ -87,21 +88,4 @@ app.post('/gerar-comprovante', async (req, res) => {
         console.error('Erro ao gerar o comprovante:', error);
         res.status(500).send('Erro ao gerar o comprovante');
     }
-});
-
-// Função para renderizar o template EJS
-function renderTemplate(templateName, data) {
-    return new Promise((resolve, reject) => {
-        app.render(templateName, data, (err, html) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(html);
-        });
-    });
-}
-
-// Inicia o servidor na porta 3000
-app.listen(3000, () => {
-    console.log('Servidor rodando na porta 3000');
-});
+};
