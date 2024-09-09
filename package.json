@@ -1,5 +1,8 @@
 {
   "description": "",
+  "scripts": {
+  "gcp-build": "node node_modules/puppeteer/install.mjs"
+},
   "dependencies": {
     "body-parser": "^1.20.2",
     "chrome-aws-lambda": "^10.1.0",

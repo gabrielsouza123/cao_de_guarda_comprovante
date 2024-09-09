@@ -1,20 +1,24 @@
-# Use uma imagem base do Node.js
-FROM node:16-alpine
+FROM node:18-slim
 
-# Defina o diretório de trabalho
+# Instalar dependências necessárias
+RUN apt-get update && apt-get install -y \
+  wget \
+  gnupg \
+  --no-install-recommends && \
+  rm -rf /var/lib/apt/lists/*
+
+# Definir o diretório de trabalho
 WORKDIR /usr/src/app
 
-# Copie os arquivos package.json e package-lock.json
+# Copiar os arquivos do projeto
 COPY package*.json ./
-
-# Instale as dependências
 RUN npm install
 
-# Copie o restante dos arquivos
+# Copiar o restante dos arquivos do projeto
 COPY . .
 
-# Exponha a porta da aplicação
-EXPOSE 3000
+# Expor a porta do aplicativo
+EXPOSE 8080
 
-# Comando para rodar a aplicação
-CMD ["node", "server.js"]
+# Comando para iniciar o aplicativo
+CMD ["npm", "start"]

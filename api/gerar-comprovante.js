@@ -1,4 +1,5 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromeLambda = require('chrome-aws-lambda');
 const path = require('path');
 const fs = require('fs');
 
@@ -45,11 +46,12 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        // Configura o Puppeteer para rodar no App Engine
+        // Lançar o Puppeteer e garantir que o Chrome esteja configurado corretamente
         const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            executablePath: process.env.CHROME_BIN || null
+            args: chromeLambda.args,
+            defaultViewport: chromeLambda.defaultViewport,
+            executablePath: await chromeLambda.executablePath,
+            headless: chromeLambda.headless,
         });
         
         const page = await browser.newPage();
@@ -77,23 +79,16 @@ module.exports = async (req, res) => {
         await page.screenshot({
             path: imagePath,
             type: 'jpeg',
-            quality: 100,
-            clip: {
-                x: 0,
-                y: 0,
-                width: Math.ceil(contentSize.width),
-                height: Math.ceil(contentSize.height)
-            }
+            quality: 100
+        });
+        
+        // Envia a imagem como resposta
+        res.sendFile(imagePath, () => {
+            // Remove o arquivo temporário após o envio
+            fs.unlinkSync(imagePath);
         });
 
-        // Fecha o Puppeteer
         await browser.close();
-
-        // Retorne a URL do comprovante gerado
-        const fileUrl = `${req.protocol}://${req.get('host')}/comprovantes/${fileName}`;
-
-        // Retorna a URL na resposta
-        res.json({ url: fileUrl });
     } catch (error) {
         console.error('Erro ao gerar o comprovante:', error);
         res.status(500).send('Erro ao gerar o comprovante');
