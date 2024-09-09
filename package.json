@@ -7,5 +7,9 @@
     "express": "^4.19.2",
     "puppeteer": "^23.3.0",
     "puppeteer-core": "^10.4.0"
-  }
+  },
+  "scripts": {
+  "postinstall": "apt-get update && apt-get install -y wget gnupg && wget https://dl.google.com/linux/linux_signing_key.pub && apt-key add linux_signing_key.pub && sh -c 'echo \"deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main\" >> /etc/apt/sources.list.d/google-chrome.list' && apt-get update && apt-get install -y google-chrome-stable"
+}
+
 }

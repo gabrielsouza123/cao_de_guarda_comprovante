@@ -45,9 +45,13 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
+        // Configura o Puppeteer para rodar no App Engine
         const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            executablePath: process.env.CHROME_BIN || null
         });
+        
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -67,9 +71,9 @@ module.exports = async (req, res) => {
             deviceScaleFactor: 2 // Para melhor qualidade
         });
         
-        // Captura a tela incluindo a margem de 24px
+        // Captura a tela e salva no diretório temporário
         const fileName = `comprovante-${Date.now()}.jpg`;
-        const imagePath = path.join(__dirname, '..', 'comprovantes', fileName);
+        const imagePath = path.join('/tmp', fileName);  // Usando o diretório /tmp
         await page.screenshot({
             path: imagePath,
             type: 'jpeg',

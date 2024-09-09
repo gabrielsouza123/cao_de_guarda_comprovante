@@ -1,5 +1,10 @@
 runtime: nodejs18
 
+env_variables:
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+  CHROME_BIN: "/usr/bin/google-chrome"
+  PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
+
 handlers:
   - url: /.*
     secure: always
