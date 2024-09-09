@@ -1,7 +1,6 @@
-const chrome = require('chrome-aws-lambda');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const path = require('path');
-const ejs = require('ejs');
+const fs = require('fs');
 
 // Função para formatar o valor em reais (R$)
 function formatarValorEmReais(valor) {
@@ -12,12 +11,10 @@ function formatarValorEmReais(valor) {
     return valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Função para renderizar o template EJS diretamente
-function renderTemplate(templateName, data) {
-    const templatePath = path.join(__dirname, '..', 'views', `${templateName}.ejs`);
-    
+// Função para renderizar o template EJS
+function renderTemplate(app, templateName, data) {
     return new Promise((resolve, reject) => {
-        ejs.renderFile(templatePath, data, (err, html) => {
+        app.render(templateName, data, (err, html) => {
             if (err) {
                 return reject(err);
             }
@@ -32,7 +29,7 @@ module.exports = async (req, res) => {
 
     try {
         // Renderiza o template EJS com os dados fornecidos
-        const html = await renderTemplate('comprovante', {
+        const html = await renderTemplate(req.app, 'comprovante', {
             nomeEmissor: dados.nomeEmissor,
             documentoEmissor: dados.documentoEmissor,
             bancoEmissor: dados.bancoEmissor,
@@ -48,13 +45,9 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        // Configura o puppeteer para usar o Chrome do chrome-aws-lambda
         const browser = await puppeteer.launch({
-            args: chrome.args,
-            executablePath: await chrome.executablePath,
-            headless: chrome.headless,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -89,8 +82,7 @@ module.exports = async (req, res) => {
             }
         });
 
-        // Fecha a página, mas mantém o navegador aberto para reutilização
-        await page.close();
+        // Fecha o Puppeteer
         await browser.close();
 
         // Retorne a URL do comprovante gerado
