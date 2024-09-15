@@ -1,5 +1,4 @@
-const puppeteer = require('puppeteer-core');
-const chromeLambda = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
@@ -46,14 +45,7 @@ module.exports = async (req, res) => {
             transacaoId: dados.transacaoId
         });
 
-        // Lançar o Puppeteer e garantir que o Chrome esteja configurado corretamente
-        const browser = await puppeteer.launch({
-            args: chromeLambda.args,
-            defaultViewport: chromeLambda.defaultViewport,
-            executablePath: await chromeLambda.executablePath,
-            headless: chromeLambda.headless,
-        });
-        
+        const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         
         // Carrega o conteúdo HTML gerado pelo EJS
@@ -73,22 +65,29 @@ module.exports = async (req, res) => {
             deviceScaleFactor: 2 // Para melhor qualidade
         });
         
-        // Captura a tela e salva no diretório temporário
+        // Captura a tela incluindo a margem de 24px
         const fileName = `comprovante-${Date.now()}.jpg`;
-        const imagePath = path.join('/tmp', fileName);  // Usando o diretório /tmp
+        const imagePath = path.join(__dirname, '..', 'comprovantes', fileName);
         await page.screenshot({
             path: imagePath,
             type: 'jpeg',
-            quality: 100
-        });
-        
-        // Envia a imagem como resposta
-        res.sendFile(imagePath, () => {
-            // Remove o arquivo temporário após o envio
-            fs.unlinkSync(imagePath);
+            quality: 100,
+            clip: {
+                x: 0,
+                y: 0,
+                width: Math.ceil(contentSize.width),
+                height: Math.ceil(contentSize.height)
+            }
         });
 
+        // Fecha o Puppeteer
         await browser.close();
+
+        // Retorne a URL do comprovante gerado
+        const fileUrl = `${req.protocol}://${req.get('host')}/comprovantes/${fileName}`;
+
+        // Retorna a URL na resposta
+        res.json({ url: fileUrl });
     } catch (error) {
         console.error('Erro ao gerar o comprovante:', error);
         res.status(500).send('Erro ao gerar o comprovante');

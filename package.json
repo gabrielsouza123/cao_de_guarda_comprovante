@@ -1,14 +1,11 @@
 {
   "description": "",
-  "scripts": {
-  "gcp-build": "node node_modules/puppeteer/install.mjs"
-},
   "dependencies": {
     "body-parser": "^1.20.2",
-    "chrome-aws-lambda": "^10.1.0",
+    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
-    "puppeteer": "^23.3.0",
-    "puppeteer-core": "^10.4.0"
+    "pdf-merger-js": "^5.1.2",
+    "puppeteer": "^23.3.0"
   }
 }
